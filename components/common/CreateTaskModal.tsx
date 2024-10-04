@@ -47,7 +47,7 @@ const CreateTaskModal = ({ open, setOpen, collection }: Props) => {
             console.log(err);
             toast({
                 title: "Failed",
-                description: "Task failed to create",
+                description: err.message,
                 variant: "destructive"
             });
             setOpen(false);

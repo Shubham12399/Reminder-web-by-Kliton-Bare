@@ -25,7 +25,7 @@ export async function createTask(data: createTaskSchemaType) {
   });
 }
 
-export async function setTaskToDone(taskId: number) {
+export async function setTaskToDone(taskId: string) {
   const user = await currentUser();
 
   if (!user) {

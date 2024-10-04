@@ -1,101 +1,83 @@
-import Image from "next/image";
+import CollectionCard from "@/components/common/CollectionCard";
+import CreateCollectionButton from "@/components/common/CreateCollectionButton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import prisma from "@/lib/prisma";
+import SadFace from "@/public/svgIcons/SadFace";
+import { currentUser } from "@clerk/nextjs/server";
+import Link from "next/link";
+import { Suspense } from "react";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+export default async function Home() {
+    const user = await currentUser();
+    if (!user) {
+        return (
+            <div className="max-w-[600px] left-1/2 absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col gap-y-4">
+                <h1 className="text-xl font-semibold leading-tight">User not found or not Logged In </h1>
+                <p className="text-sm text-gray-600 leading-tight">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Consequuntur voluptas, voluptates aliquam atque ipsum ea quae dolor odit similique. Vero.</p>
+                <Link href={"/sign-in"}>Login</Link>
+            </div>
+        )
+    }
+    return (
+        <section className="px-8 max-w-[1250px] mx-auto py-8 w-full">
+            <Suspense fallback={<WelcomeMsgFallback />}>
+                <WelcomeMessage></WelcomeMessage>
+            </Suspense>
+            <CollectionList></CollectionList>
+        </section>
+    );
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+async function WelcomeMessage() {
+    const user = await currentUser();
+    return (
+        <div>
+            <h1 className="text-3xl font-bold">Good Morning, <span className="capitalize">{user?.firstName} {user?.lastName}</span></h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    )
+}
+
+function WelcomeMsgFallback() {
+    return (
+        <div>
+            <div className="bg-gray-200 rounded-xl max-w-[670px] h-[80px]"></div>
+        </div>
+    )
+}
+
+async function CollectionList() {
+    const user = await currentUser();
+    const collections = await prisma.collection.findMany({
+        include: {
+            tasks: true,
+        },
+        where: {
+            userId: user?.id
+        }
+    });
+    // console.log("Collections :: ", collections);
+    if (collections.length === 0) {
+        return (
+            <div className="flex flex-col gap-5 max-w-[640px] mx-auto my-8 sm:my-12 md:my-16">
+                <CreateCollectionButton></CreateCollectionButton>
+                <Alert>
+                    <SadFace />
+                    <AlertTitle>Heads up!</AlertTitle>
+                    <AlertDescription>
+                        No Collection has been created yet , Create collection to continue.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
+    return (
+        <>
+            <CreateCollectionButton></CreateCollectionButton>
+            <div className="max-w-[1240px] mx-auto my-4 flex flex-col gap-5">
+                {
+                    collections.map(collection => <CollectionCard key={collection.id} collection={collection} />)
+                }
+            </div>
+        </>
+    )
 }
